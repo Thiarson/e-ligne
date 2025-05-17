@@ -1,0 +1,47 @@
+{
+    "project_title": "E-Ligne",
+
+    "loading": "Please wait a moment",
+    "ok": "OK",
+    "yes": "Yes",
+    "cancel": "Cancel",
+    
+    "generic_error_prompt": "An error occurred",
+
+    "login": "Login",
+    "login_email_hint": "Email",
+    "login_password_hint": "Password",
+    "login_forgot_password": "Forgot Password",
+    "login_not_register_yet": "Not register yet? Register here!",
+    
+    "login_error_wrong_credentials": "Email or Password incorrect",
+    "login_generic_error": "Authentication error. Please retry again",
+    "internet_error": "Please verify your internet connection",
+
+    "register": "Register",
+    "register_to_login": "Already registered? Login here!",
+
+    "register_error_weak_password": "Password too weak",
+    "register_error_email_used": "Email already used",
+    "register_error_invalid_email": "Invalid email address entered",
+    "register_generic_error": "Registration error. Please retry again",
+
+    "verify_email": "Verify Email",
+    "verify_email_sent_email_verif": "We've sent an email verification. Please open it to verify your account.",
+    "verify_email_click_link": "If you haven't received a verification email yet, click the link below.",
+    "verify_email_send_verification": "Send email verification",
+    "verify_email_restart_registration": "Restart registration",
+
+    "password_reset": "Password reset",
+    "password_reset_dialog_prompt": "A password reset link has been sent. Please check your email.",
+    "email_text_field_placeholder": "Enter your email here",
+    "password_text_field_placeholder": "Enter your password here",
+
+    "forgot_password": "Forgot Password",
+    "forgot_password_view_generic_error": "Please make sure that you are registered.",
+    "forgot_password_view_send_me_link": "Send me password reset link",
+    "forgot_password_view_back_to_login": "Back to login page",
+
+    "logout_button": "logout",
+    "logout_dialog_prompt": "Are you sure you want to logout?"
+}

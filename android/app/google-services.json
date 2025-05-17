@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "253892033705",
+    "project_id": "e-ligne",
+    "storage_bucket": "e-ligne.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253892033705:android:7f2eb05096505375183db8",
+        "android_client_info": {
+          "package_name": "com.example.ligne"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmKx8sOGoDhC00GD26ZSLm6DLcmJZ5Gz8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
