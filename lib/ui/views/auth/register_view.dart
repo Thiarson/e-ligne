@@ -122,7 +122,14 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
               color: isDark ? Colors.white : Colors.black87,
               size: 20,
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              // Navigate back to login by updating the auth state
+              context.read<AuthBloc>().add(const AuthEventLogout());
+              // Also pop the current route if it's in a navigation stack
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
           ),
         ),
         body: SafeArea(

@@ -66,6 +66,25 @@ class _VerifyEmailViewState extends State<VerifyEmailView> with SingleTickerProv
     
     return Scaffold(
       backgroundColor: isDark ? Colors.grey[900] : colors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : Colors.black87,
+            size: 20,
+          ),
+          onPressed: () {
+            // Navigate back to login by updating the auth state
+            context.read<AuthBloc>().add(const AuthEventLogout());
+            // Also pop the current route if it's in a navigation stack
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
