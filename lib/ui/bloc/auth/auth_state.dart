@@ -6,15 +6,39 @@ import 'package:ligne/data/models/remote/auth_user_model.dart';
 abstract class AuthState {
   final bool isLoading;
   final String? loadingText;
+  final String? errorMessage;
 
   const AuthState({
     required this.isLoading, 
     this.loadingText = 'Please wait a moment',
+    this.errorMessage,
+  });
+
+  /// Creates a copy of this state with the given fields replaced by the new values
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
   });
 }
 
 class AuthStateUninitialized extends AuthState {
-  const AuthStateUninitialized({required super.isLoading});
+  const AuthStateUninitialized({
+    required super.isLoading,
+    super.errorMessage,
+  });
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+  }) {
+    return AuthStateUninitialized(
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class AuthStateRegistering extends AuthState {
@@ -23,7 +47,22 @@ class AuthStateRegistering extends AuthState {
   const AuthStateRegistering({
     required this.exception, 
     required super.isLoading,
+    super.errorMessage,
   });
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+    Exception? exception,
+  }) {
+    return AuthStateRegistering(
+      isLoading: isLoading ?? this.isLoading,
+      exception: exception ?? this.exception,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class AuthStateLoggedIn extends AuthState {
@@ -32,11 +71,40 @@ class AuthStateLoggedIn extends AuthState {
   const AuthStateLoggedIn({
     required this.user, 
     required super.isLoading,
+    super.errorMessage,
   });
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+  }) {
+    return AuthStateLoggedIn(
+      user: user,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class AuthStateNeedsVerification extends AuthState {
-  const AuthStateNeedsVerification({required super.isLoading});
+  const AuthStateNeedsVerification({
+    required super.isLoading,
+    super.errorMessage,
+  });
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+  }) {
+    return AuthStateNeedsVerification(
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class AuthStateLoggedOut extends AuthState with EquatableMixin {
@@ -46,10 +114,26 @@ class AuthStateLoggedOut extends AuthState with EquatableMixin {
     required this.exception, 
     required super.isLoading,
     super.loadingText,
+    super.errorMessage,
   });
   
   @override
-  List<Object?> get props => [ exception, isLoading ];
+  List<Object?> get props => [exception, isLoading, errorMessage];
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+    Exception? exception,
+  }) {
+    return AuthStateLoggedOut(
+      exception: exception ?? this.exception,
+      isLoading: isLoading ?? this.isLoading,
+      loadingText: loadingText ?? this.loadingText,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }
 
 class AuthStateForgotPassword extends AuthState {
@@ -59,6 +143,23 @@ class AuthStateForgotPassword extends AuthState {
   const AuthStateForgotPassword({
     required this.exception, 
     required this.hasSentEmail, 
-    required super.isLoading
+    required super.isLoading,
+    super.errorMessage,
   });
+
+  @override
+  AuthState copyWith({
+    bool? isLoading,
+    String? loadingText,
+    String? errorMessage,
+    Exception? exception,
+    bool? hasSentEmail,
+  }) {
+    return AuthStateForgotPassword(
+      exception: exception ?? this.exception,
+      hasSentEmail: hasSentEmail ?? this.hasSentEmail,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
 }

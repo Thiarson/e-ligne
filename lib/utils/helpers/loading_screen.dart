@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:ligne/ui/widgets/loading/loading.dart';
 import 'package:ligne/utils/helpers/loading_screen_controller.dart';
 
 class LoadingScreen {
@@ -61,9 +62,11 @@ class LoadingScreen {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 10),
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      const LoadingIndicator(
+                        size: LoadingIndicatorSize.medium,
+                      ),
+                      const SizedBox(height: 16),
                       StreamBuilder(
                         stream: text.stream, 
                         builder: (context, snapshot) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ligne/ui/widgets/loading/loading_indicator.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:ligne/core/constants/db_fields.dart';
 import 'package:ligne/core/enums/menu_action.dart';
@@ -13,6 +14,7 @@ import 'package:ligne/ui/widgets/financial_card.dart';
 import 'package:ligne/utils/helpers/db_manager.dart';
 import 'package:ligne/utils/dialogs/logout_dialog.dart';
 import 'package:ligne/utils/dialogs/add_financial_dialog.dart';
+import 'package:intl/intl.dart';
 
 class AdminView extends StatefulWidget {
   const AdminView({super.key});
@@ -175,62 +177,260 @@ class _AdminViewState extends State<AdminView> {
 
       if (!mounted) return;
 
-      showModalBottomSheet(
+      final totalAmount = entries.fold<int>(0, (sum, entry) {
+        final amountStr = isIncome 
+            ? (entry[incomeAmountColumn] as String?) ?? '0'
+            : (entry[expenseAmountColumn] as String?) ?? '0';
+        return sum + (int.tryParse(amountStr) ?? 0);
+      });
+
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      final textColor = isDark ? Colors.white : Colors.black87;
+
+      await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        backgroundColor: Colors.transparent,
         builder: (context) => StatefulBuilder(
           builder: (context, setModalState) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AppBar(
-                  title: Text(isIncome ? 'Income Details' : 'Expense Details'),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: isIncome ? _showAddIncomeDialog : _showAddExpenseDialog,
-                    ),
-                  ],
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[900] : Colors.grey[50],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
-                if (entries.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: Text('No entries found')),
-                  )
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: entries.length,
-                      itemBuilder: (context, index) {
-                        final entry = entries[index];
-                        final String amountStr = isIncome 
-                            ? (entry[incomeAmountColumn] as String?) ?? '0'
-                            : (entry[expenseAmountColumn] as String?) ?? '0';
-                        final int amount = int.tryParse(amountStr) ?? 0;
-                        
-                        final description = isIncome
-                            ? (entry[incomeDescriptionColumn] as String? ?? 'No description')
-                            : (entry[expenseDescriptionColumn] as String? ?? 'No description');
-                            
-                        final source = isIncome
-                            ? (entry[incomeSourceColumn] as String? ?? 'No source')
-                            : (entry[expenseSourceColumn] as String? ?? 'No source');
-                        
-                        return ListTile(
-                          title: Text(description),
-                          subtitle: Text(source),
-                          trailing: Text(
-                            '${isIncome ? '+' : '-'}${amount.toStringAsFixed(0)} Ar',
-                            style: TextStyle(
-                              color: isIncome ? Colors.green : Colors.red,
-                              fontWeight: FontWeight.bold,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[850] : Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              isIncome ? 'Income Details' : 'Expense Details',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                            IconButton(
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                color: isIncome ? Colors.green : Colors.red,
+                                size: 28,
+                              ),
+                              onPressed: isIncome ? _showAddIncomeDialog : _showAddExpenseDialog,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Text(
+                              'Total: ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: textColor.withOpacity(0.8),
+                              ),
+                            ),
+                            Text(
+                              '${isIncome ? '+' : '-'}${totalAmount.toStringAsFixed(0)} Ar',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isIncome ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  
+                  // List of entries
+                  if (entries.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            isIncome ? Icons.account_balance_wallet : Icons.money_off,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No ${isIncome ? 'income' : 'expense'} recorded',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: isIncome ? _showAddIncomeDialog : _showAddExpenseDialog,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isIncome ? Colors.green : Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text('Add ${isIncome ? 'Income' : 'Expense'}'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: entries.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final entry = entries[index];
+                          final String amountStr = isIncome 
+                              ? (entry[incomeAmountColumn] as String?) ?? '0'
+                              : (entry[expenseAmountColumn] as String?) ?? '0';
+                          final int amount = int.tryParse(amountStr) ?? 0;
+                          
+                          final description = isIncome
+                              ? (entry[incomeDescriptionColumn] as String? ?? 'No description')
+                              : (entry[expenseDescriptionColumn] as String? ?? 'No description');
+                              
+                          final source = isIncome
+                              ? (entry[incomeSourceColumn] as String? ?? 'No source')
+                              : (entry[expenseSourceColumn] as String? ?? 'No source');
+                          
+                          return Dismissible(
+                            key: Key(entry['id'].toString()),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.only(right: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.centerRight,
+                              child: const Icon(Icons.delete, color: Colors.white),
+                            ),
+                            onDismissed: (direction) async {
+                              try {
+                                if (isIncome) {
+                                  await _adminService.deleteIncomeEntry(entry['id']);
+                                } else {
+                                  await _adminService.deleteExpenseEntry(entry['id']);
+                                }
+                                setState(() {
+                                  entries.removeAt(index);
+                                  _loadFinancialData();
+                                });
+                                if (mounted && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('${isIncome ? 'Income' : 'Expense'} deleted'),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to delete: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Card(
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                leading: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: (isIncome ? Colors.green : Colors.red).withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                                    color: isIncome ? Colors.green : Colors.red,
+                                    size: 20,
+                                  ),
+                                ),
+                                title: Text(
+                                  description,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: textColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  source,
+                                  style: TextStyle(
+                                    color: textColor.withOpacity(0.6),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                trailing: Text(
+                                  '${isIncome ? '+' : '-'}${amount.toStringAsFixed(0)} Ar',
+                                  style: TextStyle(
+                                    color: isIncome ? Colors.green : Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                onTap: () {
+                                  // TODO: Implement edit functionality
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             );
           },
         ),
@@ -238,7 +438,14 @@ class _AdminViewState extends State<AdminView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading details: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error loading details: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         );
       }
     } finally {
@@ -250,12 +457,26 @@ class _AdminViewState extends State<AdminView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // final cardColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    // final today = DateTime.now();
+
     return Scaffold(
+      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Administration'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Financial Overview',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        ),
+        centerTitle: false,
         actions: [
           PopupMenuButton<MenuAction>(
+            icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
               switch (value) {
                 case MenuAction.logout:
@@ -265,85 +486,250 @@ class _AdminViewState extends State<AdminView> {
                   }
               }
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem<MenuAction>(
                 value: MenuAction.logout,
-                child: Text('Logout'),
+                child: Row(
+                  children: const [
+                    Icon(Icons.logout, color: Colors.black87),
+                    SizedBox(width: 12),
+                    Text('Logout'),
+                  ],
+                ),
               ),
             ],
           ),
         ],
       ),
-      body: Column(
-        children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              // Normalize the selected day to remove time component
-              final normalizedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
-              
-              if (!isSameDay(_selectedDay, normalizedDay)) {
-                setState(() {
-                  _selectedDay = normalizedDay;
-                  _focusedDay = focusedDay;
-                  _isLoading = true; // Show loading state
-                });
-                
-                // Load financial data with the normalized date
-                _loadFinancialData();
-              }
-            },
-            onFormatChanged: (format) {
-              if (_calendarFormat != format) {
-                setState(() {
-                  _calendarFormat = format;
-                });
-              }
-            },
-          ),
-          if (_selectedDay != null) ...[
-            const SizedBox(height: 16),
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(
-                            child: buildFinancialCard(
-                              'Income',
-                              _totalIncome,
-                              Colors.green,
-                              () => _showFinancialDetails(true),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: buildFinancialCard(
-                              'Expense',
-                              _totalExpense,
-                              Colors.red,
-                              () => _showFinancialDetails(false),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      buildFinancialCard(
-                        'Balance',
-                        _balance,
-                        _balance >= 0 ? Colors.blue : Colors.orange,
-                        null,
-                      ),
-                    ],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                _selectedDay != null 
+                    ? DateFormat('EEEE, MMMM d, y').format(_selectedDay!)
+                    : 'Select a date',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ),
+            
+            // Calendar
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: TableCalendar(
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
+                focusedDay: _focusedDay,
+                calendarFormat: _calendarFormat,
+                calendarStyle: CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    shape: BoxShape.circle,
                   ),
+                  selectedDecoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  todayTextStyle: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  weekendTextStyle: TextStyle(
+                    color: isDark ? Colors.blue[200] : Colors.blue[700],
+                  ),
+                ),
+                headerStyle: HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                  formatButtonShowsNext: false,
+                  leftChevronIcon: Icon(
+                    Icons.chevron_left,
+                    color: theme.colorScheme.primary,
+                  ),
+                  rightChevronIcon: Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(color: textColor.withOpacity(0.7)),
+                  weekendStyle: TextStyle(color: Colors.blue[300]),
+                ),
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  final normalizedDay = DateTime(
+                    selectedDay.year, 
+                    selectedDay.month, 
+                    selectedDay.day
+                  );
+                  
+                  if (!isSameDay(_selectedDay, normalizedDay)) {
+                    setState(() {
+                      _selectedDay = normalizedDay;
+                      _focusedDay = focusedDay;
+                      _isLoading = true;
+                    });
+                    _loadFinancialData();
+                  }
+                },
+                onFormatChanged: (format) {
+                  if (_calendarFormat != format) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
+                },
+                onPageChanged: (focusedDay) {
+                  _focusedDay = focusedDay;
+                },
+              ),
+            ),
+            
+            // Financial Summary
+            if (_selectedDay != null) ...[
+              const SizedBox(height: 8),
+              _isLoading
+                  ? const Expanded(
+                      child: Center(
+                        child: LoadingIndicator(size: LoadingIndicatorSize.medium),
+                      ),
+                    )
+                  : Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              // Income & Expense Cards
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: buildFinancialCard(
+                                      'Income',
+                                      _totalIncome,
+                                      Colors.green,
+                                      () => _showFinancialDetails(true),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: buildFinancialCard(
+                                      'Expense',
+                                      _totalExpense,
+                                      Colors.red,
+                                      () => _showFinancialDetails(false),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Balance Card
+                              buildFinancialCard(
+                                'Balance',
+                                _balance,
+                                _balance >= 0 ? Colors.blue : Colors.orange,
+                                null,
+                              ),
+                              const SizedBox(height: 24),
+                              // Quick Actions
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildActionButton(
+                                    context,
+                                    icon: Icons.add,
+                                    label: 'Add Income',
+                                    color: Colors.green,
+                                    onTap: _showAddIncomeDialog,
+                                  ),
+                                  _buildActionButton(
+                                    context,
+                                    icon: Icons.remove,
+                                    label: 'Add Expense',
+                                    color: Colors.red,
+                                    onTap: _showAddExpenseDialog,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+            ] else ...[
+              const Spacer(),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Select a date to view financial data',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+            ],
           ],
-        ],
+        ),
+      ),    );
+  }
+
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

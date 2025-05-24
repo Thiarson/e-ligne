@@ -42,6 +42,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get login_not_register_yet => 'Not register yet? Register here!';
 
   @override
+  String get welcome_back => 'Welcome Back!';
+
+  @override
+  String get login_to_continue => 'Sign in to continue';
+
+  @override
+  String get email_required => 'Please enter your email';
+
+  @override
+  String get enter_valid_email => 'Please enter a valid email';
+
+  @override
+  String get password_required => 'Please enter your password';
+
+  @override
+  String get password_too_short => 'Password must be at least 6 characters';
+
+  @override
+  String get dont_have_an_account => 'Don\'t have an account?';
+
+  @override
+  String get sign_up => 'Sign up';
+
+  @override
   String get login_error_wrong_credentials => 'Email or Password incorrect';
 
   @override

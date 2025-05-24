@@ -46,3 +46,8 @@ class AuthEventForgotPassword extends AuthEvent {
 
   const AuthEventForgotPassword({this.email});
 }
+
+/// Event to clear any error messages in the auth state
+class AuthEventClearError extends AuthEvent {
+  const AuthEventClearError();
+}

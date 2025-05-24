@@ -17,12 +17,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context
-      .read<AuthBloc>()
-      .add(const AuthEventInitialize());
-
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        // Handle loading states
         if (state.isLoading) {
           LoadingScreen().show(
             context: context, 
@@ -31,8 +28,28 @@ class HomePage extends StatelessWidget {
         } else {
           LoadingScreen().hide();
         }
+
+        // Handle any errors
+        if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+            // Clear the error after showing it
+            context.read<AuthBloc>().add(const AuthEventClearError());
+          });
+        }
       },
       builder: (context, state) {
+        // Handle different authentication states
         if (state is AuthStateLoggedIn) {
           return const AdminView();
         } else if (state is AuthStateRegistering) {
@@ -44,8 +61,14 @@ class HomePage extends StatelessWidget {
         } else if (state is AuthStateForgotPassword) {
           return const ForgotPasswordView();
         } else {
+          // Show a loading indicator while determining auth state
           return const Scaffold(
-            body: CircularLoading(),
+            body: Center(
+              child: CircularLoading(
+                showLogo: true,
+                message: 'Loading...',
+              ),
+            ),
           );
         }
       },

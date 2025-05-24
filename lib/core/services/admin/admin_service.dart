@@ -198,4 +198,8 @@ class AdminService {
       rethrow;
     }
   }
+
+  deleteIncomeEntry(entry) {}
+
+  deleteExpenseEntry(entry) {}
 }
