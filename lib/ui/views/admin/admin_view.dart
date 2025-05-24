@@ -1,13 +1,15 @@
+import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:uuid/uuid.dart';
 import 'package:ligne/core/enums/menu_action.dart';
-import 'package:ligne/data/models/local/financial_entry.dart';
+import 'package:ligne/core/services/admin/admin_service.dart';
+import 'package:ligne/data/models/local/financial_entry_model.dart';
 import 'package:ligne/ui/bloc/auth/auth_bloc.dart';
 import 'package:ligne/ui/bloc/auth/auth_event.dart';
 import 'package:ligne/ui/widgets/financial_card.dart';
 import 'package:ligne/utils/dialogs/logout_dialog.dart';
+import 'package:ligne/utils/dialogs/add_financial_dialog.dart';
 
 class AdminView extends StatefulWidget {
   const AdminView({super.key});
@@ -17,82 +19,20 @@ class AdminView extends StatefulWidget {
 }
 
 class _AdminViewState extends State<AdminView> {
+  late final AdminService _adminService;
+
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  final Map<DateTime, List<FinancialEntryModel>> _financialEntries = {};
   final _uuid = const Uuid();
-
-  List<FinancialEntryModel> _getFinancialEntriesForDay(DateTime date) {
-    return _financialEntries[DateTime(date.year, date.month, date.day)] ?? [];
-  }
-
-  double _getTotalIncome(DateTime date) {
-    return _getFinancialEntriesForDay(date)
-        .whereType<IncomeModel>()
-        .fold(0, (sum, income) => sum + income.amount);
-  }
-
-  double _getTotalExpense(DateTime date) {
-    return _getFinancialEntriesForDay(date)
-        .whereType<ExpenseModel>()
-        .fold(0, (sum, expense) => sum + expense.amount);
-  }
-
-  double _getBalance(DateTime date) {
-    return _getTotalIncome(date) - _getTotalExpense(date);
-  }
-
-  void _processBalanceCarryover(DateTime date) {
-    final previousDay = DateTime(date.year, date.month, date.day - 1);
-    final previousBalance = _getBalance(previousDay);
-    
-    if (previousBalance != 0) {
-      final day = DateTime(date.year, date.month, date.day);
-      final existingEntries = _getFinancialEntriesForDay(day);
-      
-      // Check if balance carryover already exists for this day
-      final hasCarryover = existingEntries.any((entry) => 
-        entry.description == 'Balance Carryover' && 
-        entry.source == 'Previous Day'
-      );
-      
-      if (!hasCarryover) {
-        final entry = previousBalance > 0
-            ? IncomeModel(
-                id: _uuid.v4(),
-                description: 'Balance Carryover',
-                amount: previousBalance,
-                date: day,
-                source: 'Previous Day',
-              )
-            : ExpenseModel(
-                id: _uuid.v4(),
-                description: 'Balance Carryover',
-                amount: -previousBalance,
-                date: day,
-                source: 'Previous Day',
-              );
-        
-        _addFinancialEntry(entry);
-      }
-    }
-  }
-
-  void _addFinancialEntry(FinancialEntryModel entry) {
-    final day = DateTime(entry.date.year, entry.date.month, entry.date.day);
-    if (_financialEntries[day] == null) {
-      _financialEntries[day] = [];
-    }
-    _financialEntries[day]!.add(entry);
-    setState(() {});
-  }
-
+  
   @override
   void initState() {
-    super.initState();
+    _adminService = AdminService();
     _selectedDay = DateTime.now();
-    _processBalanceCarryover(_selectedDay!);
+    _adminService.processBalanceCarryover(_selectedDay!);
+    
+    super.initState();
   }
 
   Future<void> _showAddIncomeDialog() async {
@@ -100,39 +40,11 @@ class _AdminViewState extends State<AdminView> {
     final amountController = TextEditingController();
     final sourceController = TextEditingController();
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Income'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(hintText: 'Description'),
-            ),
-            TextField(
-              controller: amountController,
-              decoration: const InputDecoration(hintText: 'Amount'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: sourceController,
-              decoration: const InputDecoration(hintText: 'Source'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+    final result = await showAddFinancialDialog(
+      context, 
+      descriptionController, 
+      amountController, 
+      sourceController
     );
 
     if (result == true && _selectedDay != null) {
@@ -144,7 +56,8 @@ class _AdminViewState extends State<AdminView> {
         date: _selectedDay!,
         source: sourceController.text,
       );
-      _addFinancialEntry(entry);
+      _adminService.addFinancialEntry(entry);
+      setState(() {});
     }
   }
 
@@ -153,39 +66,11 @@ class _AdminViewState extends State<AdminView> {
     final amountController = TextEditingController();
     final sourceController = TextEditingController();
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Expense'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(hintText: 'Description'),
-            ),
-            TextField(
-              controller: amountController,
-              decoration: const InputDecoration(hintText: 'Amount'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: sourceController,
-              decoration: const InputDecoration(hintText: 'Source'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+    final result = await showAddFinancialDialog(
+      context, 
+      descriptionController, 
+      amountController, 
+      sourceController
     );
 
     if (result == true && _selectedDay != null) {
@@ -197,14 +82,15 @@ class _AdminViewState extends State<AdminView> {
         date: _selectedDay!,
         source: sourceController.text,
       );
-      _addFinancialEntry(entry);
+      _adminService.addFinancialEntry(entry);
+      setState(() {});
     }
   }
 
   void _showFinancialDetails(bool isIncome) {
     if (_selectedDay == null) return;
 
-    final entries = _getFinancialEntriesForDay(_selectedDay!)
+    final entries = _adminService.getFinancialEntriesForDay(_selectedDay!)
         .where((entry) => isIncome ? entry is IncomeModel : entry is ExpenseModel)
         .toList();
 
@@ -284,7 +170,7 @@ class _AdminViewState extends State<AdminView> {
                 _selectedDay = selectedDay;
                 _focusedDay = focusedDay;
               });
-              _processBalanceCarryover(selectedDay);
+              _adminService.processBalanceCarryover(selectedDay);
             },
             onFormatChanged: (format) {
               setState(() {
@@ -300,7 +186,7 @@ class _AdminViewState extends State<AdminView> {
                 Expanded(
                   child: buildFinancialCard(
                     'Income',
-                    _getTotalIncome(_selectedDay!),
+                    _adminService.getTotalIncome(_selectedDay!),
                     Colors.green,
                     () => _showFinancialDetails(true),
                   ),
@@ -309,7 +195,7 @@ class _AdminViewState extends State<AdminView> {
                 Expanded(
                   child: buildFinancialCard(
                     'Expense',
-                    _getTotalExpense(_selectedDay!),
+                    _adminService.getTotalExpense(_selectedDay!),
                     Colors.red,
                     () => _showFinancialDetails(false),
                   ),
@@ -319,7 +205,7 @@ class _AdminViewState extends State<AdminView> {
             const SizedBox(height: 8),
             buildFinancialCard(
               'Balance',
-              _getBalance(_selectedDay!),
+              _adminService.getBalance(_selectedDay!),
               Colors.blue,
               null,
             ),
