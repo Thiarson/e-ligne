@@ -5,47 +5,15 @@ import 'package:ligne/data/repositories/income_repository.dart';
 import 'package:ligne/utils/helpers/db_manager.dart';
 
 class AdminService {
-  // final Map<DateTime, List<FinancialEntryModel>> _financialEntries = {};
-
-  // List<FinancialEntryModel> getFinancialEntriesForDay(DateTime date) {
-  //   return _financialEntries[DateTime(date.year, date.month, date.day)] ?? [];
-  // }
-
-  // void processBalanceCarryover(DateTime date) {
-  //   final previousDay = DateTime(date.year, date.month, date.day - 1);
-  //   final previousBalance = getBalance(previousDay);
-    
-  //   if (previousBalance != 0) {
-  //     final day = DateTime(date.year, date.month, date.day);
-  //     final existingEntries = getFinancialEntriesForDay(day);
-      
-  //     // Check if balance carryover already exists for this day
-  //     final hasCarryover = existingEntries.any((entry) => 
-  //       entry.description == 'Balance Carryover' && 
-  //       entry.source == 'Previous Day'
-  //     );
-      
-  //     if (!hasCarryover) {
-  //       final entry = previousBalance > 0
-  //           ? IncomeModel(
-  //               id: int.parse(_uuid.v4()),
-  //               description: 'Balance Carryover',
-  //               amount: previousBalance,
-  //               date: day,
-  //               source: 'Previous Day',
-  //             )
-  //           : ExpenseModel(
-  //               id: int.parse(_uuid.v4()),
-  //               description: 'Balance Carryover',
-  //               amount: -previousBalance,
-  //               date: day,
-  //               source: 'Previous Day',
-  //             );
-        
-  //       addFinancialEntry(entry);
-  //     }
-  //   }
-  // }
+  final IncomeRepository _incomeRepository = IncomeRepository();
+  final ExpenseRepository _expenseRepository = ExpenseRepository();
+  
+  static const String _carryoverDescription = 'Balance Carryover';
+  static const String _carryoverSource = 'Previous Day';
+  
+  AdminService() {
+    DatabaseManager().ensureDbIsOpen();
+  }
 
   Future<IncomeModel> addIncomeEntry(IncomeModel entry) async {
     await DatabaseManager().ensureDbIsOpen();
@@ -148,6 +116,86 @@ class AdminService {
       return totalIncome - totalExpense;
     } catch (e) {
       return 0; // Return 0 in case of error
+    }
+  }
+  
+  Future<void> _deleteExistingCarryover(DateTime date) async {
+    try {
+      // Normalize the date to remove time component
+      final dateNormalized = DateTime(date.year, date.month, date.day);
+      
+      // Get all incomes and expenses for the normalized date
+      final incomes = await _incomeRepository.select(date: dateNormalized);
+      final expenses = await _expenseRepository.select(date: dateNormalized);
+      
+      // Delete matching income carryovers
+      for (final income in incomes) {
+        if (income[incomeDescriptionColumn] == _carryoverDescription && 
+            income[incomeSourceColumn] == _carryoverSource) {
+          await _incomeRepository.delete(incomeId: income[idColumn] as int);
+        }
+      }
+      
+      // Delete matching expense carryovers
+      for (final expense in expenses) {
+        if (expense[expenseDescriptionColumn] == _carryoverDescription && 
+            expense[expenseSourceColumn] == _carryoverSource) {
+          await _expenseRepository.delete(expenseId: expense[idColumn] as int);
+        }
+      }      
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  Future<void> processBalanceCarryover(DateTime selectedDate) async {
+    try {
+      // Normalize dates to compare only the date part (without time)
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final selectedDateNormalized = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+      
+      // Only process carryover for today or past dates
+      if (selectedDateNormalized.isAfter(today)) {
+        return;
+      }
+      
+      // For today, we want to use yesterday's balance
+      final previousDay = selectedDateNormalized.subtract(const Duration(days: 1));
+      final previousBalance = await getBalance(previousDay);
+      
+      // No need to do anything if balance is zero
+      if (previousBalance == 0) {
+        return;
+      }
+      
+      // Delete any existing carryover for the selected date
+      await _deleteExistingCarryover(selectedDateNormalized);
+      
+      // Create appropriate carryover entry
+      if (previousBalance > 0) {
+        // Add to income
+        final entry = IncomeModel(
+          id: 0, // Will be set by the database
+          description: _carryoverDescription,
+          amount: previousBalance,
+          date: selectedDateNormalized,
+          source: _carryoverSource,
+        );
+        await addIncomeEntry(entry);
+      } else {
+        // Add to expenses (convert to positive amount)
+        final entry = ExpenseModel(
+          id: 0, // Will be set by the database
+          description: _carryoverDescription,
+          amount: -previousBalance, // Convert to positive
+          date: selectedDateNormalized,
+          source: _carryoverSource,
+        );
+        await addExpenseEntry(entry);
+      }      
+    } catch (e) {
+      rethrow;
     }
   }
 }

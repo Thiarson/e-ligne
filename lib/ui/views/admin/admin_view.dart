@@ -52,15 +52,21 @@ class _AdminViewState extends State<AdminView> {
     setState(() => _isLoading = true);
     
     try {
+      // Process balance carryover first
+      await _adminService.processBalanceCarryover(_selectedDay!);
+      
+      // Then get the updated financial data
       final totalIncome = await _adminService.getTotalIncome(_selectedDay!);
       final totalExpense = await _adminService.getTotalExpense(_selectedDay!);
       final balance = await _adminService.getBalance(_selectedDay!);
       
-      setState(() {
-        _totalIncome = totalIncome;
-        _totalExpense = totalExpense;
-        _balance = balance;
-      });
+      if (mounted) {
+        setState(() {
+          _totalIncome = totalIncome;
+          _totalExpense = totalExpense;
+          _balance = balance;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -277,17 +283,26 @@ class _AdminViewState extends State<AdminView> {
             calendarFormat: _calendarFormat,
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-                _isLoading = true;
-              });
-              _loadFinancialData();
+              // Normalize the selected day to remove time component
+              final normalizedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+              
+              if (!isSameDay(_selectedDay, normalizedDay)) {
+                setState(() {
+                  _selectedDay = normalizedDay;
+                  _focusedDay = focusedDay;
+                  _isLoading = true; // Show loading state
+                });
+                
+                // Load financial data with the normalized date
+                _loadFinancialData();
+              }
             },
             onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
+              if (_calendarFormat != format) {
+                setState(() {
+                  _calendarFormat = format;
+                });
+              }
             },
           ),
           if (_selectedDay != null) ...[
