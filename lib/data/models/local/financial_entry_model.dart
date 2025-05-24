@@ -1,7 +1,7 @@
 class FinancialEntryModel {
-  final String id;
+  final int id;
   final String description;
-  final double amount;
+  final int amount;
   final DateTime date;
   final String source;
 

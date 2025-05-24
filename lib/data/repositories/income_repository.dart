@@ -5,30 +5,46 @@ class IncomeRepository {
   Future<int> insert({
     required int carId,
     required String description,
-    required String amount,
+    required int amount,
     required String source,
-  }) {
+    required DateTime date,
+  }) async {
     final db = DatabaseManager.getDatabaseOrThrow();
 
-    return db.insert(incomeTable, {
+    return await db.insert(incomeTable, {
       incomeCarIdColumn: carId,
       incomeDescriptionColumn: description,
-      incomeAmountColumn: amount,
-      incomeSourcecolumn: source,
+      incomeAmountColumn: amount.toString(), // Store amount as string
+      incomeSourceColumn: source,
+      incomeDateColumn: date.toIso8601String(),
     });
   }
 
-  Future<List<Map<String, Object?>>> select({ int? incomeId }) {
+  Future<List<Map<String, Object?>>> select({DateTime? date, int? incomeId}) async {
     final db = DatabaseManager.getDatabaseOrThrow();
 
-    if (incomeId == null) return db.query(incomeTable);
+    if (incomeId != null) {
+      return await db.query(
+        incomeTable,
+        limit: 1,
+        where: 'id = ?',
+        whereArgs: [incomeId],
+      );
+    }
 
-    return db.query(
-      incomeTable,
-      limit: 1,
-      where: 'id = ?',
-      whereArgs: [ incomeId ],
-    );
+    if (date != null) {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+      
+      return await db.query(
+        incomeTable,
+        where: '$incomeDateColumn >= ? AND $incomeDateColumn < ?',
+        whereArgs: [startOfDay.toIso8601String(), endOfDay.toIso8601String()],
+      );
+    }
+
+    // If no filters are provided, return all records
+    return await db.query(incomeTable);
   }
 
   Future<int> delete({ int? incomeId }) {
@@ -46,7 +62,7 @@ class IncomeRepository {
   Future<int> update({
     required int incomeId,
     required String description,
-    required String amount,
+    required int amount,
     required String source,
   }) {
     final db = DatabaseManager.getDatabaseOrThrow();
@@ -54,7 +70,7 @@ class IncomeRepository {
     return db.update(incomeTable, {
       incomeDescriptionColumn: description,
       incomeAmountColumn: amount,
-      incomeSourcecolumn: source,
+      incomeSourceColumn: source,
     }, where: 'id = ?', whereArgs: [ incomeId ]);
   }
 }

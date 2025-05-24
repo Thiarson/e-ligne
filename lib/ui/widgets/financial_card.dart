@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Widget buildFinancialCard(String title, double amount, Color color, VoidCallback? onTap) {
+Widget buildFinancialCard(String title, int amount, Color color, VoidCallback? onTap) {
   return GestureDetector(
     onTap: onTap,
     child: Card(

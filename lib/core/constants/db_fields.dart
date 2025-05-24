@@ -13,8 +13,8 @@ const incomeTable = 'income';
 const incomeCarIdColumn = 'car_id';
 const incomeDescriptionColumn ='description';
 const incomeAmountColumn = 'amount';
-const incomeSourcecolumn = 'source';
-const incomeCreatedAtColumn = 'created_at';
+const incomeSourceColumn = 'source';
+const incomeDateColumn = 'date';
 
 // Table expense and related fields
 const expenseTable = 'expense';
@@ -22,8 +22,8 @@ const expenseTable = 'expense';
 const expenseCarIdColumn = 'car_id';
 const expenseDescriptionColumn ='description';
 const expenseAmountColumn = 'amount';
-const expenseSourcecolumn = 'source';
-const expenseCreatedAtColumn = 'created_at';
+const expenseSourceColumn = 'source';
+const expenseDateColumn = 'date';
 
 // SQL statement to create table car
 const createCarTable = '''CREATE TABLE IF NOT EXISTS "car" (
@@ -39,6 +39,7 @@ const createIncomeTable = '''CREATE TABLE IF NOT EXISTS "income" (
   "description" TEXT NOT NULL,
   "amount" TEXT NOT NULL,
   "source" TEXT NOT NULL,
+  "date" TEXT NOT NULL,
   FOREIGN KEY("car_id") REFERENCES "car"("id"),
   PRIMARY KEY("id" AUTOINCREMENT)
 );''';
@@ -50,6 +51,7 @@ const createExpenseTable = '''CREATE TABLE IF NOT EXISTS "expense" (
   "description" TEXT NOT NULL,
   "amount" TEXT NOT NULL,
   "source" TEXT NOT NULL,
+  "date" TEXT NOT NULL,
   FOREIGN KEY("car_id") REFERENCES "car"("id"),
   PRIMARY KEY("id" AUTOINCREMENT)
 );''';

@@ -5,30 +5,46 @@ class ExpenseRepository {
   Future<int> insert({
     required int carId,
     required String description,
-    required String amount,
+    required int amount,
     required String source,
-  }) {
+    required DateTime date,
+  }) async {
     final db = DatabaseManager.getDatabaseOrThrow();
 
-    return db.insert(expenseTable, {
+    return await db.insert(expenseTable, {
       expenseCarIdColumn: carId,
       expenseDescriptionColumn: description,
-      expenseAmountColumn: amount,
-      expenseSourcecolumn: source,
+      expenseAmountColumn: amount.toString(), // Store amount as string
+      expenseSourceColumn: source,
+      expenseDateColumn: date.toIso8601String(),
     });
   }
 
-  Future<List<Map<String, Object?>>> select({ int? expenseId}) {
+  Future<List<Map<String, Object?>>> select({DateTime? date, int? expenseId}) async {
     final db = DatabaseManager.getDatabaseOrThrow();
 
-    if (expenseId == null) return db.query(expenseTable);
+    if (expenseId != null) {
+      return await db.query(
+        expenseTable,
+        limit: 1,
+        where: 'id = ?',
+        whereArgs: [expenseId],
+      );
+    }
 
-    return db.query(
-      expenseTable,
-      limit: 1,
-      where: 'id = ?',
-      whereArgs: [ expenseId ],
-    );
+    if (date != null) {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+      
+      return await db.query(
+        expenseTable,
+        where: '$expenseDateColumn >= ? AND $expenseDateColumn < ?',
+        whereArgs: [startOfDay.toIso8601String(), endOfDay.toIso8601String()],
+      );
+    }
+
+    // If no filters are provided, return all records
+    return await db.query(expenseTable);
   }
 
   Future<int> delete({ int? expenseId }) {
@@ -46,7 +62,7 @@ class ExpenseRepository {
   Future<int> update({
     required int expenseId,
     required String description,
-    required String amount,
+    required int amount,
     required String source,
   }) {
     final db = DatabaseManager.getDatabaseOrThrow();
@@ -54,7 +70,7 @@ class ExpenseRepository {
     return db.update(expenseTable, {
       expenseDescriptionColumn: description,
       expenseAmountColumn: amount,
-      expenseSourcecolumn: source,
+      expenseSourceColumn: source,
     }, where: 'id = ?', whereArgs: [ expenseId ]);
   }
 }

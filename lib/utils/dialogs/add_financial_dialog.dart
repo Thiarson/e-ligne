@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:ligne/core/enums/menu_action.dart';
 
 Future<bool> showAddFinancialDialog(
   BuildContext context,
   TextEditingController descriptionController,
   TextEditingController amountController,
   TextEditingController sourceController,
+  FinancialType type,
 ) async {
+  final financialType = type == FinancialType.income
+      ? 'Income'
+      : 'Expense';
+  
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Add Expense'),
+      title: Text('Add $financialType'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
