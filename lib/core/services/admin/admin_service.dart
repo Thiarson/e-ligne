@@ -68,8 +68,11 @@ class AdminService {
       await DatabaseManager().ensureDbIsOpen();
       final incomeRepository = IncomeRepository();
 
-      // Get all incomes for the selected day
-      final incomes = await incomeRepository.select(date: date);
+      // Get all incomes for the selected day and car
+      final incomes = await incomeRepository.select(
+        date: date,
+        carId: carId,
+      );
       
       // Calculate the total income
       final totalIncome = incomes.fold(0, (sum, income) {
@@ -92,8 +95,11 @@ class AdminService {
       await DatabaseManager().ensureDbIsOpen();
       final expenseRepository = ExpenseRepository();
 
-      // Get all expenses for the selected day
-      final expenses = await expenseRepository.select(date: date);
+      // Get all expenses for the selected day and car
+      final expenses = await expenseRepository.select(
+        date: date,
+        carId: carId,
+      );
       
       // Calculate the total expense
       final totalExpense = expenses.fold(0, (sum, expense) {
@@ -121,14 +127,21 @@ class AdminService {
     }
   }
   
-  Future<void> _deleteExistingCarryover(DateTime date) async {
+  Future<void> _deleteExistingCarryover(DateTime date, int carId) async {
     try {
       // Normalize the date to remove time component
       final dateNormalized = DateTime(date.year, date.month, date.day);
       
-      // Get all incomes and expenses for the normalized date
-      final incomes = await _incomeRepository.select(date: dateNormalized);
-      final expenses = await _expenseRepository.select(date: dateNormalized);
+      // Get all incomes and expenses for the normalized date and car
+      final incomes = await _incomeRepository.select(
+        date: dateNormalized,
+        carId: carId,
+      );
+      
+      final expenses = await _expenseRepository.select(
+        date: dateNormalized,
+        carId: carId,
+      );
       
       // Delete matching income carryovers
       for (final income in incomes) {
@@ -171,8 +184,8 @@ class AdminService {
         return;
       }
       
-      // Delete any existing carryover for the selected date
-      await _deleteExistingCarryover(selectedDateNormalized);
+      // Delete any existing carryover for the selected date and car
+      await _deleteExistingCarryover(selectedDateNormalized, carId);
       
       // Create appropriate carryover entry
       if (previousBalance > 0) {

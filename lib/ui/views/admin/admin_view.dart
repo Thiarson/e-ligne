@@ -42,15 +42,26 @@ class _AdminViewState extends State<AdminView> {
     _adminService = AdminService();
     _selectedDay = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadFinancialData();
       // Load cars when the view initializes
       final carProvider = Provider.of<CarProvider>(context, listen: false);
       carProvider.loadCars().then((_) {
         if (carProvider.currentCar == null && carProvider.cars.isNotEmpty) {
           carProvider.setCurrentCar(carProvider.cars.first);
+        } else if (carProvider.currentCar != null) {
+          _loadFinancialData();
         }
       });
     });
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload financial data when the current car changes
+    final carProvider = Provider.of<CarProvider>(context);
+    if (carProvider.currentCar != null) {
+      _loadFinancialData();
+    }
   }
 
   Future<void> _loadFinancialData() async {
@@ -209,19 +220,37 @@ class _AdminViewState extends State<AdminView> {
 
   Future<void> _showFinancialDetails(bool isIncome) async {
     if (_selectedDay == null) return;
+    
+    final carProvider = Provider.of<CarProvider>(context, listen: false);
+    if (carProvider.currentCar == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a car first')),
+        );
+      }
+      return;
+    }
 
     try {
       setState(() => _isLoading = true);
       
       List<Map<String, dynamic>> entries;
+      final currentCarId = carProvider.currentCar!.id;
+      
       if (isIncome) {
         final incomeRepo = IncomeRepository();
         await DatabaseManager().ensureDbIsOpen();
-        entries = await incomeRepo.select(date: _selectedDay!);
+        entries = await incomeRepo.select(
+          date: _selectedDay!,
+          carId: currentCarId,
+        );
       } else {
         final expenseRepo = ExpenseRepository();
         await DatabaseManager().ensureDbIsOpen();
-        entries = await expenseRepo.select(date: _selectedDay!);
+        entries = await expenseRepo.select(
+          date: _selectedDay!,
+          carId: currentCarId,
+        );
       }
 
       if (!mounted) return;

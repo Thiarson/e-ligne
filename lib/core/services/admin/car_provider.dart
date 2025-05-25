@@ -44,9 +44,14 @@ class CarProvider with ChangeNotifier {
 
   Future<void> setCurrentCar(CarModel car) async {
     if (_currentCar?.id != car.id) {
-      await _carService.setCurrentCar(car);
-      _currentCar = car;
-      notifyListeners();
+      _setLoading(true);
+      try {
+        await _carService.setCurrentCar(car);
+        _currentCar = car;
+        notifyListeners();
+      } finally {
+        _setLoading(false);
+      }
     }
   }
 

@@ -17,7 +17,11 @@ class CarService {
   }
 
   Future<void> setCurrentCar(CarModel car) async {
-    _currentCar = car;
+    if (_currentCar?.id != car.id) {
+      _currentCar = car;
+      // You might want to persist the current car ID in shared preferences here
+      // to maintain the selection across app restarts
+    }
   }
 
   Future<CarModel> getCar(String registration) async {

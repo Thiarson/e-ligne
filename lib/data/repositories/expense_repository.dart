@@ -20,31 +20,42 @@ class ExpenseRepository {
     });
   }
 
-  Future<List<Map<String, Object?>>> select({DateTime? date, int? expenseId}) async {
+  Future<List<Map<String, Object?>>> select({
+    DateTime? date,
+    int? expenseId,
+    int? carId,
+  }) async {
     final db = DatabaseManager.getDatabaseOrThrow();
+    final List<dynamic> whereArgs = [];
+    final List<String> whereConditions = [];
 
     if (expenseId != null) {
-      return await db.query(
-        expenseTable,
-        limit: 1,
-        where: 'id = ?',
-        whereArgs: [expenseId],
-      );
+      whereConditions.add('id = ?');
+      whereArgs.add(expenseId);
     }
 
     if (date != null) {
       final startOfDay = DateTime(date.year, date.month, date.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
-      
-      return await db.query(
-        expenseTable,
-        where: '$expenseDateColumn >= ? AND $expenseDateColumn < ?',
-        whereArgs: [startOfDay.toIso8601String(), endOfDay.toIso8601String()],
-      );
+      whereConditions.add('$expenseDateColumn >= ? AND $expenseDateColumn < ?');
+      whereArgs.addAll([startOfDay.toIso8601String(), endOfDay.toIso8601String()]);
     }
 
-    // If no filters are provided, return all records
-    return await db.query(expenseTable);
+    if (carId != null) {
+      whereConditions.add('$expenseCarIdColumn = ?');
+      whereArgs.add(carId);
+    }
+
+    String? whereClause;
+    if (whereConditions.isNotEmpty) {
+      whereClause = whereConditions.join(' AND ');
+    }
+
+    return await db.query(
+      expenseTable,
+      where: whereClause,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+    );
   }
 
   Future<int> delete({ int? expenseId }) {
