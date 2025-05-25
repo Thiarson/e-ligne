@@ -132,7 +132,7 @@ class AdminService {
       for (final income in incomes) {
         if (income[incomeDescriptionColumn] == _carryoverDescription && 
             income[incomeSourceColumn] == _carryoverSource) {
-          await _incomeRepository.delete(incomeId: income[idColumn] as int);
+          await _incomeRepository.delete(incomeId: income[incomeIdColumn] as int);
         }
       }
       
@@ -140,7 +140,7 @@ class AdminService {
       for (final expense in expenses) {
         if (expense[expenseDescriptionColumn] == _carryoverDescription && 
             expense[expenseSourceColumn] == _carryoverSource) {
-          await _expenseRepository.delete(expenseId: expense[idColumn] as int);
+          await _expenseRepository.delete(expenseId: expense[expenseIdColum] as int);
         }
       }      
     } catch (e) {

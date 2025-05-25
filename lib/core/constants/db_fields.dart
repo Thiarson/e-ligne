@@ -4,12 +4,13 @@ const dbName = 'finance.db';
 // Table car and related fields
 const carTable = 'car';
 
-const idColumn = 'id';
-const registrationColumn = 'registration';
+const carIdColumn = 'id';
+const carRegistrationColumn = 'registration';
 
 // Table income and related fields
 const incomeTable = 'income';
 
+const incomeIdColumn = 'id';
 const incomeCarIdColumn = 'car_id';
 const incomeDescriptionColumn ='description';
 const incomeAmountColumn = 'amount';
@@ -19,6 +20,7 @@ const incomeDateColumn = 'date';
 // Table expense and related fields
 const expenseTable = 'expense';
 
+const expenseIdColum = 'id';
 const expenseCarIdColumn = 'car_id';
 const expenseDescriptionColumn ='description';
 const expenseAmountColumn = 'amount';
