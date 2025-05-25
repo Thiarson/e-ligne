@@ -15,12 +15,12 @@ class AdminService {
     DatabaseManager().ensureDbIsOpen();
   }
 
-  Future<IncomeModel> addIncomeEntry(IncomeModel entry) async {
+  Future<IncomeModel> addIncomeEntry({ required IncomeModel entry, required int carId }) async {
     await DatabaseManager().ensureDbIsOpen();
     final incomeRepository = IncomeRepository();
 
     final incomeId = await incomeRepository.insert(
-      carId: 1, 
+      carId: carId,
       description: entry.description, 
       amount: entry.amount, 
       source: entry.source,
@@ -29,6 +29,7 @@ class AdminService {
 
     final newIncome = IncomeModel(
       id: incomeId,
+      carId: carId,
       description: entry.description,
       amount: entry.amount,
       date: entry.date,
@@ -38,12 +39,12 @@ class AdminService {
     return newIncome;
   }
 
-  Future<ExpenseModel> addExpenseEntry(ExpenseModel entry) async {
+  Future<ExpenseModel> addExpenseEntry({ required ExpenseModel entry, required int carId }) async {
     await DatabaseManager().ensureDbIsOpen();
     final expenseRepository = ExpenseRepository();
 
     final expenseId = await expenseRepository.insert(
-      carId: 1, 
+      carId: carId,
       description: entry.description, 
       amount: entry.amount, 
       source: entry.source,
@@ -52,6 +53,7 @@ class AdminService {
 
     final newExpense = ExpenseModel(
       id: expenseId,
+      carId: carId,
       description: entry.description,
       amount: entry.amount,
       date: entry.date,
@@ -61,7 +63,7 @@ class AdminService {
     return newExpense;
   }
 
-  Future<int> getTotalIncome(DateTime date) async {
+  Future<int> getTotalIncome(DateTime date, int carId) async {
     try {
       await DatabaseManager().ensureDbIsOpen();
       final incomeRepository = IncomeRepository();
@@ -85,7 +87,7 @@ class AdminService {
     }
   }
 
-  Future<int> getTotalExpense(DateTime date) async {
+  Future<int> getTotalExpense(DateTime date, int carId) async {
     try {
       await DatabaseManager().ensureDbIsOpen();
       final expenseRepository = ExpenseRepository();
@@ -109,10 +111,10 @@ class AdminService {
     }
   }
 
-  Future<int> getBalance(DateTime date) async {
+  Future<int> getBalance(DateTime date, int carId) async {
     try {
-      final totalIncome = await getTotalIncome(date);
-      final totalExpense = await getTotalExpense(date);
+      final totalIncome = await getTotalIncome(date, carId);
+      final totalExpense = await getTotalExpense(date, carId);
       return totalIncome - totalExpense;
     } catch (e) {
       return 0; // Return 0 in case of error
@@ -148,7 +150,7 @@ class AdminService {
     }
   }
   
-  Future<void> processBalanceCarryover(DateTime selectedDate) async {
+  Future<void> processBalanceCarryover(DateTime selectedDate, int carId) async {
     try {
       // Normalize dates to compare only the date part (without time)
       final now = DateTime.now();
@@ -162,7 +164,7 @@ class AdminService {
       
       // For today, we want to use yesterday's balance
       final previousDay = selectedDateNormalized.subtract(const Duration(days: 1));
-      final previousBalance = await getBalance(previousDay);
+      final previousBalance = await getBalance(previousDay, carId);
       
       // No need to do anything if balance is zero
       if (previousBalance == 0) {
@@ -177,22 +179,24 @@ class AdminService {
         // Add to income
         final entry = IncomeModel(
           id: 0, // Will be set by the database
+          carId: carId,
           description: _carryoverDescription,
           amount: previousBalance,
           date: selectedDateNormalized,
           source: _carryoverSource,
         );
-        await addIncomeEntry(entry);
+        await addIncomeEntry(entry: entry, carId: carId);
       } else {
         // Add to expenses (convert to positive amount)
         final entry = ExpenseModel(
           id: 0, // Will be set by the database
+          carId: carId,
           description: _carryoverDescription,
           amount: -previousBalance, // Convert to positive
           date: selectedDateNormalized,
           source: _carryoverSource,
         );
-        await addExpenseEntry(entry);
+        await addExpenseEntry(entry: entry, carId: carId);
       }      
     } catch (e) {
       rethrow;

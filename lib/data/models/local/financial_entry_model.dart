@@ -1,5 +1,6 @@
 class FinancialEntryModel {
   final int id;
+  final int carId;
   final String description;
   final int amount;
   final DateTime date;
@@ -7,6 +8,7 @@ class FinancialEntryModel {
 
   FinancialEntryModel({
     required this.id,
+    required this.carId,
     required this.description,
     required this.amount,
     required this.date,
@@ -17,6 +19,7 @@ class FinancialEntryModel {
 class IncomeModel extends FinancialEntryModel {
   IncomeModel({
     required super.id,
+    required super.carId,
     required super.description,
     required super.amount,
     required super.date,
@@ -27,6 +30,7 @@ class IncomeModel extends FinancialEntryModel {
 class ExpenseModel extends FinancialEntryModel {
   ExpenseModel({
     required super.id,
+    required super.carId,
     required super.description,
     required super.amount,
     required super.date,

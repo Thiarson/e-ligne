@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:ligne/l10n/gen/app_localizations.dart';
+import 'package:ligne/core/services/admin/car_service.dart';
+import 'package:ligne/core/services/admin/car_provider.dart';
 import 'package:ligne/core/services/auth/firebase_auth_provider.dart';
 import 'package:ligne/ui/bloc/auth/auth_bloc.dart';
 import 'package:ligne/ui/bloc/auth/auth_event.dart';
@@ -25,6 +28,9 @@ class App extends StatelessWidget {
       providers: [
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(FirebaseAuthProvider())..add(const AuthEventInitialize()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CarProvider(CarService()),
         ),
       ],
       child: MaterialApp(

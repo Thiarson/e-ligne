@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ligne/ui/widgets/loading/loading_indicator.dart';
+import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 import 'package:ligne/core/constants/db_fields.dart';
 import 'package:ligne/core/enums/menu_action.dart';
+import 'package:ligne/core/services/admin/car_provider.dart';
 import 'package:ligne/core/services/admin/admin_service.dart';
 import 'package:ligne/data/models/local/financial_entry_model.dart';
 import 'package:ligne/data/repositories/income_repository.dart';
 import 'package:ligne/data/repositories/expense_repository.dart';
 import 'package:ligne/ui/bloc/auth/auth_bloc.dart';
 import 'package:ligne/ui/bloc/auth/auth_event.dart';
+import 'package:ligne/ui/views/admin/car_selection_screen.dart';
 import 'package:ligne/ui/widgets/financial_card.dart';
+import 'package:ligne/ui/widgets/loading/loading_indicator.dart';
 import 'package:ligne/utils/helpers/db_manager.dart';
 import 'package:ligne/utils/dialogs/logout_dialog.dart';
 import 'package:ligne/utils/dialogs/add_financial_dialog.dart';
-import 'package:intl/intl.dart';
 
 class AdminView extends StatefulWidget {
   const AdminView({super.key});
@@ -41,6 +43,13 @@ class _AdminViewState extends State<AdminView> {
     _selectedDay = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFinancialData();
+      // Load cars when the view initializes
+      final carProvider = Provider.of<CarProvider>(context, listen: false);
+      carProvider.loadCars().then((_) {
+        if (carProvider.currentCar == null && carProvider.cars.isNotEmpty) {
+          carProvider.setCurrentCar(carProvider.cars.first);
+        }
+      });
     });
   }
 
@@ -50,17 +59,35 @@ class _AdminViewState extends State<AdminView> {
       return;
     }
     
+    final carProvider = Provider.of<CarProvider>(context, listen: false);
+    if (carProvider.currentCar == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    
     if (!mounted) return;
     setState(() => _isLoading = true);
     
     try {
-      // Process balance carryover first
-      await _adminService.processBalanceCarryover(_selectedDay!);
+      // Process balance carryover first for the selected car
+      await _adminService.processBalanceCarryover(
+        _selectedDay!,
+        carProvider.currentCar!.id,
+      );
       
-      // Then get the updated financial data
-      final totalIncome = await _adminService.getTotalIncome(_selectedDay!);
-      final totalExpense = await _adminService.getTotalExpense(_selectedDay!);
-      final balance = await _adminService.getBalance(_selectedDay!);
+      // Then get the updated financial data for the selected car
+      final totalIncome = await _adminService.getTotalIncome(
+        _selectedDay!,
+        carProvider.currentCar!.id,
+      );
+      final totalExpense = await _adminService.getTotalExpense(
+        _selectedDay!,
+        carProvider.currentCar!.id,
+      );
+      final balance = await _adminService.getBalance(
+        _selectedDay!,
+        carProvider.currentCar!.id,
+      );
       
       if (mounted) {
         setState(() {
@@ -86,6 +113,16 @@ class _AdminViewState extends State<AdminView> {
     final descriptionController = TextEditingController();
     final amountController = TextEditingController();
     final sourceController = TextEditingController();
+    final carProvider = Provider.of<CarProvider>(context, listen: false);
+
+    if (carProvider.currentCar == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a car first')),
+        );
+      }
+      return;
+    }
 
     final result = await showAddFinancialDialog(
       context, 
@@ -100,13 +137,14 @@ class _AdminViewState extends State<AdminView> {
         final amount = int.tryParse(amountController.text) ?? 0;
         final entry = IncomeModel(
           id: 0, // Will be set by the database
+          carId: carProvider.currentCar!.id,
           description: descriptionController.text,
           amount: amount,
           date: _selectedDay!,
           source: sourceController.text,
         );
         
-        await _adminService.addIncomeEntry(entry);
+        await _adminService.addIncomeEntry(entry: entry, carId: carProvider.currentCar!.id);
         if (mounted) {
           await _loadFinancialData();
         }
@@ -124,6 +162,16 @@ class _AdminViewState extends State<AdminView> {
     final descriptionController = TextEditingController();
     final amountController = TextEditingController();
     final sourceController = TextEditingController();
+    final carProvider = Provider.of<CarProvider>(context, listen: false);
+
+    if (carProvider.currentCar == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a car first')),
+        );
+      }
+      return;
+    }
 
     final result = await showAddFinancialDialog(
       context, 
@@ -138,13 +186,14 @@ class _AdminViewState extends State<AdminView> {
         final amount = int.tryParse(amountController.text) ?? 0;
         final entry = ExpenseModel(
           id: 0, // Will be set by the database
+          carId: carProvider.currentCar!.id,
           description: descriptionController.text,
           amount: amount,
           date: _selectedDay!,
           source: sourceController.text,
         );
         
-        await _adminService.addExpenseEntry(entry);
+        await _adminService.addExpenseEntry(entry: entry, carId: carProvider.currentCar!.id);
         if (mounted) {
           await _loadFinancialData();
         }
@@ -468,13 +517,38 @@ class _AdminViewState extends State<AdminView> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Financial Overview',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('E-ligne'),
+            const SizedBox(height: 2),
+            Consumer<CarProvider>(
+              builder: (context, carProvider, _) {
+                return Text(
+                  carProvider.currentCar?.registration ?? 'No car selected',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-        centerTitle: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.directions_car),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                builder: (context) => const CarSelectionScreen(),
+              );
+            },
+          ),
           PopupMenuButton<MenuAction>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
