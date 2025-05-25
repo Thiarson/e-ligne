@@ -12,7 +12,6 @@ import 'package:ligne/data/repositories/expense_repository.dart';
 import 'package:ligne/ui/bloc/auth/auth_bloc.dart';
 import 'package:ligne/ui/bloc/auth/auth_event.dart';
 import 'package:ligne/ui/views/admin/car_selection_screen.dart';
-import 'package:ligne/ui/widgets/financial_card.dart';
 import 'package:ligne/ui/widgets/loading/loading_indicator.dart';
 import 'package:ligne/utils/helpers/db_manager.dart';
 import 'package:ligne/utils/dialogs/logout_dialog.dart';
@@ -533,53 +532,261 @@ class _AdminViewState extends State<AdminView> {
     }
   }
 
+  // Show vehicle details in a bottom sheet
+  void _showVehicleDetails(BuildContext context, String registration) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.directions_car,
+                    size: 28,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        registration,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Active • Last updated: ${DateFormat('MMM d, y').format(DateTime.now())}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildDetailRow(Icons.credit_card, 'Registration', registration),
+            _buildDetailRow(Icons.calendar_today, 'Added on', DateFormat('MMM d, y').format(DateTime.now())),
+            _buildDetailRow(Icons.speed, 'Total Trips', '24 trips'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showCarSelection(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Change Vehicle'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCarSelection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: const CarSelectionScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    // final cardColor = isDark ? Colors.grey[850] : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
-    // final today = DateTime.now();
 
     return Scaffold(
       backgroundColor: isDark ? Colors.grey[900] : Colors.grey[50],
       appBar: AppBar(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('E-ligne'),
-            const SizedBox(height: 2),
-            Consumer<CarProvider>(
-              builder: (context, carProvider, _) {
-                return Text(
-                  carProvider.currentCar?.registration ?? 'No car selected',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Consumer<CarProvider>(
+          builder: (context, carProvider, _) {
+            final car = carProvider.currentCar;
+            final hasCar = car != null;
+            
+            return InkWell(
+              onTap: hasCar ? () => _showVehicleDetails(context, car.registration) : null,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.15),
+                    width: 1,
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.directions_car,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          hasCar ? 'Active Vehicle' : 'No vehicle selected',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hasCar ? car.registration : 'Tap to select',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (hasCar) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white.withOpacity(0.7),
+                        size: 24,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.directions_car),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.refresh, size: 20),
+            ),
             onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                builder: (context) => const CarSelectionScreen(),
-              );
+              // Refresh data
+              if (_selectedDay != null) {
+                _loadFinancialData();
+              }
             },
           ),
           PopupMenuButton<MenuAction>(
-            icon: const Icon(Icons.more_vert),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.more_vert, size: 20),
+            ),
             onSelected: (value) async {
               switch (value) {
                 case MenuAction.logout:
@@ -587,16 +794,17 @@ class _AdminViewState extends State<AdminView> {
                   if (shouldLogout && context.mounted) {
                     context.read<AuthBloc>().add(const AuthEventLogout());
                   }
+                  break;
               }
             },
             itemBuilder: (context) => [
               PopupMenuItem<MenuAction>(
                 value: MenuAction.logout,
                 child: Row(
-                  children: const [
-                    Icon(Icons.logout, color: Colors.black87),
-                    SizedBox(width: 12),
-                    Text('Logout'),
+                  children: [
+                    Icon(Icons.logout, color: Colors.red[400]),
+                    const SizedBox(width: 12),
+                    const Text('Logout'),
                   ],
                 ),
               ),
@@ -608,230 +816,452 @@ class _AdminViewState extends State<AdminView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                _selectedDay != null 
-                    ? DateFormat('EEEE, MMMM d, y').format(_selectedDay!)
-                    : 'Select a date',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+            // Date Picker Section
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date Header
+                  Text(
+                    _selectedDay != null 
+                        ? DateFormat('EEEE, MMMM d, y').format(_selectedDay!)
+                        : 'Select a date',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Calendar Card
+                  Card(
+                    margin: EdgeInsets.zero,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: TableCalendar(
+                        firstDay: DateTime.utc(2020, 1, 1),
+                        lastDay: DateTime.utc(2030, 12, 31),
+                        focusedDay: _focusedDay,
+                        calendarFormat: _calendarFormat,
+                        calendarStyle: CalendarStyle(
+                          defaultTextStyle: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          weekendTextStyle: TextStyle(
+                            color: isDark ? Colors.blue[200] : Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                          todayDecoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          selectedDecoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          todayTextStyle: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        headerStyle: HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
+                          formatButtonShowsNext: false,
+                          titleTextStyle: TextStyle(
+                            color: textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          leftChevronIcon: Icon(
+                            Icons.chevron_left,
+                            color: theme.colorScheme.primary,
+                          ),
+                          rightChevronIcon: Icon(
+                            Icons.chevron_right,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        daysOfWeekStyle: DaysOfWeekStyle(
+                          weekdayStyle: TextStyle(
+                            color: textColor.withOpacity(0.7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          weekendStyle: TextStyle(
+                            color: Colors.blue[400],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                        onDaySelected: (selectedDay, focusedDay) {
+                          final normalizedDay = DateTime(
+                            selectedDay.year, 
+                            selectedDay.month, 
+                            selectedDay.day
+                          );
+                          
+                          if (!isSameDay(_selectedDay, normalizedDay)) {
+                            setState(() {
+                              _selectedDay = normalizedDay;
+                              _focusedDay = focusedDay;
+                              _isLoading = true;
+                            });
+                            _loadFinancialData();
+                          }
+                        },
+                        onFormatChanged: (format) {
+                          if (_calendarFormat != format) {
+                            setState(() {
+                              _calendarFormat = format;
+                            });
+                          }
+                        },
+                        onPageChanged: (focusedDay) {
+                          _focusedDay = focusedDay;
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             
-            // Calendar
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                calendarFormat: _calendarFormat,
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  selectedDecoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  todayTextStyle: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  weekendTextStyle: TextStyle(
-                    color: isDark ? Colors.blue[200] : Colors.blue[700],
-                  ),
-                ),
-                headerStyle: HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                  formatButtonShowsNext: false,
-                  leftChevronIcon: Icon(
-                    Icons.chevron_left,
-                    color: theme.colorScheme.primary,
-                  ),
-                  rightChevronIcon: Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                daysOfWeekStyle: DaysOfWeekStyle(
-                  weekdayStyle: TextStyle(color: textColor.withOpacity(0.7)),
-                  weekendStyle: TextStyle(color: Colors.blue[300]),
-                ),
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  final normalizedDay = DateTime(
-                    selectedDay.year, 
-                    selectedDay.month, 
-                    selectedDay.day
-                  );
-                  
-                  if (!isSameDay(_selectedDay, normalizedDay)) {
-                    setState(() {
-                      _selectedDay = normalizedDay;
-                      _focusedDay = focusedDay;
-                      _isLoading = true;
-                    });
-                    _loadFinancialData();
-                  }
-                },
-                onFormatChanged: (format) {
-                  if (_calendarFormat != format) {
-                    setState(() {
-                      _calendarFormat = format;
-                    });
-                  }
-                },
-                onPageChanged: (focusedDay) {
-                  _focusedDay = focusedDay;
-                },
-              ),
-            ),
-            
-            // Financial Summary
+            // Main Content
             if (_selectedDay != null) ...[
-              const SizedBox(height: 8),
               _isLoading
                   ? const Expanded(
                       child: Center(
-                        child: LoadingIndicator(size: LoadingIndicatorSize.medium),
+                        child: LoadingIndicator(size: LoadingIndicatorSize.large),
                       ),
                     )
                   : Expanded(
                       child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              // Income & Expense Cards
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: buildFinancialCard(
-                                      'Income',
-                                      _totalIncome,
-                                      Colors.green,
-                                      () => _showFinancialDetails(true),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: buildFinancialCard(
-                                      'Expense',
-                                      _totalExpense,
-                                      Colors.red,
-                                      () => _showFinancialDetails(false),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              // Balance Card
-                              buildFinancialCard(
-                                'Balance',
-                                _balance,
-                                _balance >= 0 ? Colors.blue : Colors.orange,
-                                null,
-                              ),
-                              const SizedBox(height: 24),
-                              // Quick Actions
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildActionButton(
-                                    context,
-                                    icon: Icons.add,
-                                    label: 'Add Income',
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            // Financial Overview Cards
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildFinancialCard(
+                                    context: context,
+                                    title: 'Income',
+                                    amount: _totalIncome,
+                                    icon: Icons.arrow_downward_rounded,
                                     color: Colors.green,
-                                    onTap: _showAddIncomeDialog,
+                                    onTap: () => _showFinancialDetails(true),
                                   ),
-                                  _buildActionButton(
-                                    context,
-                                    icon: Icons.remove,
-                                    label: 'Add Expense',
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildFinancialCard(
+                                    context: context,
+                                    title: 'Expense',
+                                    amount: _totalExpense,
+                                    icon: Icons.arrow_upward_rounded,
                                     color: Colors.red,
-                                    onTap: _showAddExpenseDialog,
+                                    onTap: () => _showFinancialDetails(false),
                                   ),
-                                ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildFinancialCard(
+                              context: context,
+                              title: 'Balance',
+                              amount: _balance,
+                              icon: _balance >= 0 ? Icons.account_balance_wallet : Icons.warning_rounded,
+                              color: _balance >= 0 ? Colors.blue : Colors.orange,
+                              isBalance: true,
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Quick Actions
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                'Quick Actions',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor.withOpacity(0.7),
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildCompactActionButton(
+                                  context: context,
+                                  icon: Icons.add_circle_outline,
+                                  label: 'Income',
+                                  color: Colors.green[700]!,
+                                  onTap: _showAddIncomeDialog,
+                                ),
+                                _buildCompactActionButton(
+                                  context: context,
+                                  icon: Icons.remove_circle_outline,
+                                  label: 'Expense',
+                                  color: Colors.red[700]!,
+                                  onTap: _showAddExpenseDialog,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
             ] else ...[
-              const Spacer(),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Select a date to view financial data',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+              // Empty State
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_month_rounded,
+                        size: 72,
+                        color: Colors.grey[400],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'Select a date to begin',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: textColor.withOpacity(0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Choose a date to view or add financial entries',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const Spacer(),
             ],
           ],
         ),
-      ),    );
+      ),
+    );
   }
 
 
-  Widget _buildActionButton(
-    BuildContext context, {
+  Widget _buildFinancialCard({
+    required BuildContext context,
+    required String title,
+    required int amount,
+    required IconData icon,
+    required Color color,
+    bool isBalance = false,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    
+    final formattedAmount = NumberFormat.currency(
+      symbol: 'Ar ',
+      decimalDigits: 0,
+    ).format(amount);
+    
+    // Define gradient colors based on card type
+    final gradientColors = isBalance
+        ? [
+            color.withOpacity(0.1),
+            color.withOpacity(0.05),
+          ]
+        : [
+            isDark ? Colors.grey[850]! : Colors.white,
+            isDark ? Colors.grey[850]! : Colors.grey[50]!,
+          ];
+
+    Widget cardContent = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isBalance ? color.withOpacity(0.3) : Colors.transparent,
+          width: 1,
+        ),
+        boxShadow: [
+          if (!isDark && !isBalance)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                  color: isBalance ? color : textColor.withOpacity(0.6),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            formattedAmount,
+            style: TextStyle(
+              fontSize: isBalance ? 22 : 20,
+              fontWeight: FontWeight.w700,
+              color: isBalance ? color : textColor,
+              letterSpacing: -0.5,
+            ),
+          ),
+          if (isBalance) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    amount >= 0 ? Icons.trending_up : Icons.trending_down,
+                    size: 14,
+                    color: color,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    amount >= 0 ? 'In Profit' : 'In Deficit',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // Wrap with InkWell if onTap is provided
+    if (onTap != null) {
+      cardContent = Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: cardContent,
+        ),
+      );
+    } else {
+      cardContent = Material(color: Colors.transparent, child: cardContent);
+    }
+    
+    // Return the card with proper sizing
+    return isBalance 
+        ? cardContent 
+        : Expanded(child: cardContent);
+  }  
+
+  Widget _buildCompactActionButton({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark 
-                    ? Colors.white 
-                    : Colors.black87,
-                fontWeight: FontWeight.w500,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
