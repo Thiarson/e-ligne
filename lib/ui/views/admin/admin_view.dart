@@ -309,40 +309,70 @@ class _AdminViewState extends State<AdminView> {
                             Text(
                               isIncome ? 'Income Details' : 'Expense Details',
                               style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                                 color: textColor,
+                                letterSpacing: -0.3,
                               ),
                             ),
                             IconButton(
-                              icon: Icon(
-                                Icons.add_circle_outline,
-                                color: isIncome ? Colors.green : Colors.red,
-                                size: 28,
+                              icon: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: (isIncome ? Colors.green : Colors.red).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.add_rounded,
+                                  color: isIncome ? Colors.green[700] : Colors.red[700],
+                                  size: 22,
+                                ),
                               ),
                               onPressed: isIncome ? _showAddIncomeDialog : _showAddExpenseDialog,
+                              splashRadius: 24,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              'Total: ',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: textColor.withOpacity(0.8),
-                              ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: (isIncome ? Colors.green[50] : Colors.red[50])?.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: (isIncome ? Colors.green : Colors.red).withOpacity(0.2),
+                              width: 1,
                             ),
-                            Text(
-                              '${isIncome ? '+' : '-'}${totalAmount.toStringAsFixed(0)} Ar',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isIncome ? Colors.green : Colors.red,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total ${isIncome ? 'Income' : 'Expense'}:',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: textColor.withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: (isIncome ? Colors.green[100] : Colors.red[100])?.withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: 'Ar ', decimalDigits: 0).format(totalAmount)}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: isIncome ? Colors.green[800] : Colors.red[800],
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -350,45 +380,115 @@ class _AdminViewState extends State<AdminView> {
                   
                   // List of entries
                   if (entries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 48.0),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[900]!
+                            : Colors.grey[50]!,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isIncome ? Icons.account_balance_wallet : Icons.money_off,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No ${isIncome ? 'income' : 'expense'} recorded',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: (isIncome ? Colors.green[50] : Colors.red[50])?.withOpacity(0.4),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isIncome ? Icons.account_balance_wallet_rounded : Icons.money_off_csred_rounded,
+                              size: 40,
+                              color: isIncome ? Colors.green[600] : Colors.red[600],
                             ),
                           ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'No ${isIncome ? 'Income' : 'Expense'} Recorded',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).textTheme.titleMedium?.color,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                           const SizedBox(height: 8),
+                          Text(
+                            isIncome 
+                                ? 'Start by adding your first income source' 
+                                : 'Track your expenses to see them here',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: isIncome ? _showAddIncomeDialog : _showAddExpenseDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isIncome ? Colors.green : Colors.red,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              shadowColor: (isIncome ? Colors.green : Colors.red).withOpacity(0.3),
                             ),
-                            child: Text('Add ${isIncome ? 'Income' : 'Expense'}'),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.add, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Add ${isIncome ? 'Income' : 'Expense'}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     )
                   else
-                    Expanded(
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[900]!
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor.withOpacity(0.1),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          if (Theme.of(context).brightness == Brightness.light)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                      ),
                       child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: entries.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          color: Theme.of(context).dividerColor.withOpacity(0.1),
+                          indent: 16,
+                          endIndent: 16,
+                        ),
                         itemBuilder: (context, index) {
                           final entry = entries[index];
                           final String amountStr = isIncome 
@@ -404,6 +504,10 @@ class _AdminViewState extends State<AdminView> {
                               ? (entry[incomeSourceColumn] as String? ?? 'No source')
                               : (entry[expenseSourceColumn] as String? ?? 'No source');
                           
+                          final date = entry['date'] != null 
+                              ? DateTime.parse(entry['date'].toString())
+                              : DateTime.now();
+                          
                           return Dismissible(
                             key: Key(entry['id'].toString()),
                             direction: DismissDirection.endToStart,
@@ -415,8 +519,31 @@ class _AdminViewState extends State<AdminView> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.centerRight,
-                              child: const Icon(Icons.delete, color: Colors.white),
+                              child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
                             ),
+                            confirmDismiss: (direction) async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Confirm Delete'),
+                                  content: Text('Are you sure you want to delete this ${isIncome ? 'income' : 'expense'}?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return confirmed ?? false;
+                            },
                             onDismissed: (direction) async {
                               try {
                                 if (isIncome) {
@@ -424,11 +551,11 @@ class _AdminViewState extends State<AdminView> {
                                 } else {
                                   await _adminService.deleteExpenseEntry(entry['id']);
                                 }
-                                setState(() {
-                                  entries.removeAt(index);
-                                  _loadFinancialData();
-                                });
-                                if (mounted && context.mounted) {
+                                if (mounted) {
+                                  setState(() {
+                                    entries.removeAt(index);
+                                    _loadFinancialData();
+                                  });
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('${isIncome ? 'Income' : 'Expense'} deleted'),
@@ -436,11 +563,18 @@ class _AdminViewState extends State<AdminView> {
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
+                                      action: SnackBarAction(
+                                        label: 'Undo',
+                                        textColor: Colors.blue,
+                                        onPressed: () {
+                                          // TODO: Implement undo functionality
+                                        },
+                                      ),
                                     ),
                                   );
                                 }
                               } catch (e) {
-                                if (mounted && context.mounted) {
+                                if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Failed to delete: ${e.toString()}'),
@@ -454,52 +588,92 @@ class _AdminViewState extends State<AdminView> {
                                 }
                               }
                             },
-                            child: Card(
-                              elevation: 1,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: (isIncome ? Colors.green : Colors.red).withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                                    color: isIncome ? Colors.green : Colors.red,
-                                    size: 20,
-                                  ),
-                                ),
-                                title: Text(
-                                  description,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    color: textColor,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                subtitle: Text(
-                                  source,
-                                  style: TextStyle(
-                                    color: textColor.withOpacity(0.6),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                trailing: Text(
-                                  '${isIncome ? '+' : '-'}${amount.toStringAsFixed(0)} Ar',
-                                  style: TextStyle(
-                                    color: isIncome ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
                                 onTap: () {
                                   // TODO: Implement edit functionality
                                 },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: (isIncome ? Colors.green[50] : Colors.red[50])?.withOpacity(0.5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                                          size: 20,
+                                          color: isIncome ? Colors.green[600] : Colors.red[600],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              description,
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                                color: Theme.of(context).textTheme.titleMedium?.color,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.label_important_outline_rounded,
+                                                  size: 14,
+                                                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  source,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '${isIncome ? '+' : '-'}${NumberFormat.currency(symbol: 'Ar ', decimalDigits: 0).format(amount)}',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: isIncome ? Colors.green[700] : Colors.red[700],
+                                              letterSpacing: -0.3,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            DateFormat('MMM d, h:mm a').format(date),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           );
@@ -1017,14 +1191,14 @@ class _AdminViewState extends State<AdminView> {
                                 _buildCompactActionButton(
                                   context: context,
                                   icon: Icons.add_circle_outline,
-                                  label: 'Income',
+                                  label: 'Add Income',
                                   color: Colors.green[700]!,
                                   onTap: _showAddIncomeDialog,
                                 ),
                                 _buildCompactActionButton(
                                   context: context,
                                   icon: Icons.remove_circle_outline,
-                                  label: 'Expense',
+                                  label: 'Add Expense',
                                   color: Colors.red[700]!,
                                   onTap: _showAddExpenseDialog,
                                 ),
