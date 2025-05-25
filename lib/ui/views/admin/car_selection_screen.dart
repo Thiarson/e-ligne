@@ -62,75 +62,137 @@ class _CarSelectionScreenState extends State<CarSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[50],
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24.0),
-          child: AppBar(
-            title: Text(
-              'My Vehicles',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: true,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.info_outline),
-                onPressed: () => _showHelpDialog(context),
+        preferredSize: const Size.fromHeight(kToolbarHeight + 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.primaryColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 24.0, left: 16, right: 16, bottom: 8),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: const IconThemeData(
+                color: Colors.white, // Ensures the back button is white
+              ),
+              title: Text(
+                'My Vehicles',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.help_outline, color: Colors.white),
+                  onPressed: () => _showHelpDialog(context),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      body: Consumer<CarProvider>(
-        builder: (context, provider, _) {
-          return Column(
-            children: [
-              // Search and Add Car Section
-              _buildHeaderSection(context, provider),
-              
-              // Status Indicator
-              if (provider.isLoading && provider.cars.isEmpty)
-                const LinearProgressIndicator(minHeight: 2)
-              else
-                const Divider(height: 1, thickness: 1),
-              
-              // Cars List
-              Expanded(
-                child: _buildCarsList(provider),
-              ),
-            ],
-          );
-        },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    theme.primaryColor.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.1],
+                )
+              : null,
+        ),
+        child: Consumer<CarProvider>(
+          builder: (context, provider, _) {
+            return Column(
+              children: [
+                // Search and Add Car Section
+                _buildHeaderSection(context, provider),
+                
+                // Status Indicator
+                if (provider.isLoading && provider.cars.isEmpty)
+                  const LinearProgressIndicator(minHeight: 2, backgroundColor: Colors.transparent)
+                else
+                  Container(
+                    height: 1,
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    color: isDark ? Colors.white12 : Colors.grey[200],
+                  ),
+                
+                // Cars List
+                Expanded(
+                  child: _buildCarsList(provider),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddCarDialog(context),
         icon: const Icon(Icons.add, size: 24),
-        label: const Text('Add Vehicle'),
-        elevation: 2,
+        label: const Text('Add Vehicle', style: TextStyle(fontWeight: FontWeight.w600)),
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
 
   Widget _buildHeaderSection(BuildContext context, CarProvider provider) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          if (provider.cars.isNotEmpty)
+          if (provider.cars.isNotEmpty) ...[
             Center(
-              child: Text(
-                'Select a vehicle to view details or add a new one',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).hintColor,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.05) : theme.primaryColor.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : theme.primaryColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  'Select a vehicle to view details or add a new one',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDark ? Colors.white70 : theme.primaryColor.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
+            const SizedBox(height: 4),
+          ] else
+            const SizedBox(height: 8),
         ],
       ),
     );
@@ -161,42 +223,82 @@ class _CarSelectionScreenState extends State<CarSelectionScreen> {
   }
 
   Widget _buildCarCard(BuildContext context, CarModel car, bool isSelected, CarProvider provider) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: isSelected ? 4 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected 
-            ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
-            : BorderSide(color: Colors.grey.shade300, width: 1),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        boxShadow: [
+          if (isSelected)
+            BoxShadow(
+              color: theme.primaryColor.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          else if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          provider.setCurrentCar(car);
-          Navigator.pop(context);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Car Icon with Status
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? Theme.of(context).primaryColor.withOpacity(0.1)
-                      : Colors.grey.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.directions_car,
-                  size: 28,
-                  color: isSelected 
-                      ? Theme.of(context).primaryColor 
-                      : Colors.grey.shade600,
-                ),
-              ),
+      child: Material(
+        color: isDark ? Colors.grey[850] : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            provider.setCurrentCar(car);
+            Navigator.pop(context);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              border: isSelected
+                  ? Border.all(
+                      color: theme.primaryColor,
+                      width: 1.5,
+                    )
+                  : Border.all(
+                      color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                      width: 1,
+                    ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Car Icon with Status
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.primaryColor.withOpacity(0.1)
+                          : isDark 
+                              ? Colors.grey[800]
+                              : Colors.grey[50],
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? theme.primaryColor.withOpacity(0.3)
+                            : isDark 
+                                ? Colors.grey[700]!
+                                : Colors.grey[200]!,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.directions_car_rounded,
+                      size: 28,
+                      color: isSelected
+                          ? theme.primaryColor
+                          : isDark
+                              ? Colors.grey[300]
+                              : Colors.grey[600],
+                    ),
+                  ),
               
               const SizedBox(width: 16),
               
@@ -251,51 +353,84 @@ class _CarSelectionScreenState extends State<CarSelectionScreen> {
                 )
               else if (provider.cars.length > 1)
                 IconButton(
-                  icon: const Icon(Icons.more_vert),
+                  icon: Icon(Icons.more_vert, 
+                    color: Theme.of(context).hintColor,
+                  ),
                   onPressed: () => _showCarOptions(context, car, provider),
                 ),
-            ],
+            ]),
           ),
         ),
+      ),
       ),
     );
   }
   
   Widget _buildEmptyState(CarProvider provider) {
-    return Center(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.directions_car_outlined,
-            size: 64,
-            color: Theme.of(context).hintColor.withOpacity(0.5),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? theme.primaryColor.withOpacity(0.1) : theme.primaryColor.withOpacity(0.05),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark ? theme.primaryColor.withOpacity(0.3) : theme.primaryColor.withOpacity(0.1),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.directions_car_outlined,
+              size: 56,
+              color: theme.primaryColor,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 28),
           Text(
             'No Vehicles Added',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.grey[800],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
-              'Add your first vehicle to get started with tracking your trips and maintenance.',
+              'You haven\'t added any vehicles yet. Add your first vehicle to get started with tracking your trips and expenses.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).hintColor,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                height: 1.5,
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: () => _showAddCarDialog(context),
-            icon: const Icon(Icons.add, size: 20),
-            label: const Text('Add First Vehicle'),
+            icon: const Icon(Icons.add, size: 22),
+            label: const Text(
+              'Add First Vehicle',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
             ),
           ),
+          const SizedBox(height: 40),
         ],
       ),
     );
