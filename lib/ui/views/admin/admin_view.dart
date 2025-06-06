@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ligne/ui/bloc/sync/sync_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -1089,45 +1091,184 @@ class _AdminViewState extends State<AdminView> {
                     const SizedBox(height: 40),
                     // Title
                     Text(
-                      'No Vehicles Yet',
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                      'Welcome to Ligne',
+                      style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
+                        letterSpacing: -0.5,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     // Description
                     Text(
-                      'Get started by adding your first vehicle to track your finances and manage your trips efficiently.',
+                      'Start by adding your first vehicle or sync with your existing data from the cloud.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.hintColor,
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const Spacer(),
-                    // Action button
+                    const SizedBox(height: 40),
+                    // Sync button
+                    BlocConsumer<SyncBloc, SyncState>(
+                      listener: (context, state) async {
+                        if (state is SyncSuccess || state is SyncFailure) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        }
+                        if (state is SyncSuccess) {
+                          final carProvider = Provider.of<CarProvider>(context, listen: false);
+                          // Reload cars from the database
+                          await carProvider.loadCars();
+                          
+                          // If no current car is set but we have cars, set the first one
+                          if (carProvider.currentCar == null && carProvider.cars.isNotEmpty) {
+                            await carProvider.setCurrentCar(carProvider.cars.first);
+                          }
+                          
+                          // Refresh financial data if we have a current car
+                          if (carProvider.currentCar != null) {
+                            await _loadFinancialData();
+                          }
+                          
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Sync completed successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            
+                            // Force a rebuild of the widget tree
+                            setState(() {});
+                          }
+                        } else if (state is SyncFailure) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Sync failed: ${state.errorMessage}'),
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      builder: (context, state) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          child: OutlinedButton(
+                            onPressed: state is SyncInProgress
+                                ? null
+                                : () {
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => const Dialog(
+                                        backgroundColor: Colors.transparent,
+                                        elevation: 0,
+                                        child: LoadingIndicator(
+                                          size: LoadingIndicatorSize.large,
+                                        ),
+                                      ),
+                                    );
+                                    context.read<SyncBloc>().add(const SyncData());
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.surface,
+                              foregroundColor: theme.colorScheme.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: theme.colorScheme.primary.withOpacity(0.5),
+                                  width: 1.5,
+                                ),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (state is SyncInProgress)
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.cloud_sync_outlined, size: 22),
+                                const SizedBox(width: 10),
+                                Text(
+                                  state is SyncInProgress ? 'Syncing...' : 'Sync with Cloud',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Divider with "or" text
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: theme.dividerColor.withOpacity(0.3),
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text(
+                              'OR',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.hintColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: theme.dividerColor.withOpacity(0.3),
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Add vehicle button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       child: ElevatedButton(
                         onPressed: _showAddVehicleDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 2,
+                          shadowColor: theme.colorScheme.primary.withOpacity(0.3),
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.add_circle_outline, size: 22),
-                            SizedBox(width: 8),
+                            SizedBox(width: 10),
                             Text(
-                              'Add Your First Vehicle',
+                              'Add New Vehicle',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
