@@ -16,6 +16,7 @@ import 'package:ligne/ui/widgets/loading/loading_indicator.dart';
 import 'package:ligne/utils/helpers/db_manager.dart';
 import 'package:ligne/utils/dialogs/logout_dialog.dart';
 import 'package:ligne/utils/dialogs/add_financial_dialog.dart';
+import 'package:ligne/ui/widgets/sync_button.dart';
 
 class AdminView extends StatefulWidget {
   const AdminView({super.key});
@@ -1226,22 +1227,8 @@ class _AdminViewState extends State<AdminView> {
           },
         ),
         actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.refresh, size: 20),
-            ),
-            onPressed: () {
-              // Refresh data
-              if (_selectedDay != null) {
-                _loadFinancialData();
-              }
-            },
-          ),
+          // Add Sync Button
+          const SyncButton(),
           PopupMenuButton<MenuAction>(
             icon: Container(
               padding: const EdgeInsets.all(6),

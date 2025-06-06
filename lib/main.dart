@@ -7,6 +7,7 @@ import 'package:ligne/core/services/admin/car_provider.dart';
 import 'package:ligne/core/services/auth/firebase_auth_provider.dart';
 import 'package:ligne/ui/bloc/auth/auth_bloc.dart';
 import 'package:ligne/ui/bloc/auth/auth_event.dart';
+import 'package:ligne/ui/bloc/sync/sync_bloc.dart';
 import 'package:ligne/ui/views/splash/splash_screen.dart';
 
 void main() async {
@@ -28,6 +29,9 @@ class App extends StatelessWidget {
       providers: [
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(FirebaseAuthProvider())..add(const AuthEventInitialize()),
+        ),
+        BlocProvider<SyncBloc>(
+          create: (context) => SyncBloc(),
         ),
         ChangeNotifierProvider(
           create: (context) => CarProvider(CarService()),
