@@ -62,79 +62,24 @@ class SyncButton extends StatelessWidget {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Sync completed successfully'),
+              content: Text('Sync completed successfully'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              margin: const EdgeInsets.all(16),
-              duration: const Duration(seconds: 2),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 2),
             ),
           );
-        } else if (state is SyncInProgress) {
-          // Show loading dialog when sync starts
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!Navigator.canPop(context)) {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                barrierColor: Colors.black45,
-                builder: (BuildContext context) {
-                  return WillPopScope(
-                    onWillPop: () async => false,
-                    child: Dialog(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const LoadingIndicator(
-                              size: LoadingIndicatorSize.large,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Syncing Data...',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Please wait while we sync your data',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).hintColor,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-          });
         }
       },
       builder: (context, state) {
         // Show loading dialog if showLoading is true and syncing
         if (showLoading && state.isSyncing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (Navigator.of(context, rootNavigator: true).canPop()) return;
+            
             showDialog(
               context: context,
               barrierDismissible: false,
