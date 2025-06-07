@@ -56,17 +56,32 @@ class _AdminViewState extends State<AdminView> {
     });
   }
   
+  int? _lastCarId;
+  DateTime? _lastSelectedDay;
+  
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload financial data when the current car changes
+    
+    // Get current car and selected day
     final carProvider = Provider.of<CarProvider>(context);
-    if (carProvider.currentCar != null) {
+    final currentCarId = carProvider.currentCar?.id;
+    
+    // Only reload if the car has changed or if we don't have data yet
+    if (currentCarId != null && 
+        (currentCarId != _lastCarId || _selectedDay != _lastSelectedDay)) {
+      _lastCarId = currentCarId;
+      _lastSelectedDay = _selectedDay;
       _loadFinancialData();
     }
   }
 
+  bool _isLoadingData = false;
+  
   Future<void> _loadFinancialData() async {
+    // Prevent multiple concurrent calls
+    if (_isLoadingData) return;
+    
     if (_selectedDay == null) {
       setState(() => _isLoading = false);
       return;
@@ -79,7 +94,11 @@ class _AdminViewState extends State<AdminView> {
     }
     
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    
+    setState(() {
+      _isLoading = true;
+      _isLoadingData = true;
+    });
     
     try {
       // Process balance carryover first for the selected car
@@ -117,7 +136,10 @@ class _AdminViewState extends State<AdminView> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _isLoadingData = false;
+        });
       }
     }
   }
